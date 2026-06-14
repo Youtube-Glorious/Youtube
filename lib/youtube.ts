@@ -17,6 +17,8 @@ export interface VideoStat {
   views: number;
   likes: number;
   comments: number;
+  durationSec: number; // 영상 길이(초)
+  isShort: boolean;    // 60초 이하 = 쇼츠로 간주
 }
 
 export interface ChannelData {
@@ -103,7 +105,15 @@ interface VideosResp {
     id: string;
     snippet: { title: string; publishedAt: string; thumbnails: { medium?: { url: string }; high?: { url: string } } };
     statistics: { viewCount?: string; likeCount?: string; commentCount?: string };
+    contentDetails: { duration: string };
   }[];
+}
+
+/** ISO8601 길이(PT#H#M#S) → 초 */
+function parseDuration(iso: string): number {
+  const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || "");
+  if (!m) return 0;
+  return Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0);
 }
 
 /** 한 채널의 전체 데이터(통계 + 최근 영상)를 가져온다. */
@@ -131,18 +141,23 @@ export async function getChannelData(cfg: ChannelConfig, maxVideos = 12): Promis
   if (videoIds.length) {
     const vids = await yt<VideosResp>(
       "videos",
-      { part: "snippet,statistics", id: videoIds.join(",") },
+      { part: "snippet,statistics,contentDetails", id: videoIds.join(",") },
       60 * 60
     );
-    recentVideos = (vids.items || []).map((v) => ({
-      id: v.id,
-      title: v.snippet.title,
-      publishedAt: v.snippet.publishedAt,
-      thumbnail: v.snippet.thumbnails.medium?.url || v.snippet.thumbnails.high?.url || "",
-      views: Number(v.statistics.viewCount || 0),
-      likes: Number(v.statistics.likeCount || 0),
-      comments: Number(v.statistics.commentCount || 0),
-    }));
+    recentVideos = (vids.items || []).map((v) => {
+      const durationSec = parseDuration(v.contentDetails.duration);
+      return {
+        id: v.id,
+        title: v.snippet.title,
+        publishedAt: v.snippet.publishedAt,
+        thumbnail: v.snippet.thumbnails.medium?.url || v.snippet.thumbnails.high?.url || "",
+        views: Number(v.statistics.viewCount || 0),
+        likes: Number(v.statistics.likeCount || 0),
+        comments: Number(v.statistics.commentCount || 0),
+        durationSec,
+        isShort: durationSec > 0 && durationSec <= 60,
+      };
+    });
   }
 
   return {

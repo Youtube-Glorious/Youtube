@@ -1,14 +1,15 @@
 import { VideoStat } from "@/lib/youtube";
-import { formatNumber, formatDate, engagementRate } from "@/lib/format";
+import { formatNumber, formatDate, formatTime, formatDuration, engagementRate } from "@/lib/format";
 
 export function VideoTable({ videos }: { videos: VideoStat[] }) {
   return (
     <div className="scroll-thin overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-card">
-      <table className="w-full min-w-[640px] text-sm">
+      <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-slate-100 text-left text-xs text-slate-400">
             <th className="px-4 py-3 font-medium">영상</th>
-            <th className="px-4 py-3 font-medium">게시일</th>
+            <th className="px-4 py-3 font-medium">길이</th>
+            <th className="px-4 py-3 font-medium">게시일시</th>
             <th className="px-4 py-3 text-right font-medium">조회수</th>
             <th className="px-4 py-3 text-right font-medium">좋아요</th>
             <th className="px-4 py-3 text-right font-medium">댓글</th>
@@ -32,7 +33,21 @@ export function VideoTable({ videos }: { videos: VideoStat[] }) {
                     <span className="line-clamp-2 max-w-xs font-medium text-slate-800">{v.title}</span>
                   </a>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-slate-500">{formatDate(v.publishedAt)}</td>
+                <td className="whitespace-nowrap px-4 py-3">
+                  <span
+                    className={
+                      "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums " +
+                      (v.isShort ? "bg-shorts text-shorts-ink" : "bg-slate-100 text-slate-600")
+                    }
+                  >
+                    {v.isShort ? "쇼츠 " : ""}
+                    {formatDuration(v.durationSec)}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                  <div>{formatDate(v.publishedAt)}</div>
+                  <div className="text-xs text-slate-400">{formatTime(v.publishedAt)}</div>
+                </td>
                 <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-900">
                   {formatNumber(v.views)}
                 </td>
