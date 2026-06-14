@@ -130,12 +130,20 @@ export async function getChannelData(cfg: ChannelConfig, maxVideos = 12): Promis
 
   const uploads = item.contentDetails.relatedPlaylists.uploads;
 
-  const pl = await yt<PlaylistResp>(
-    "playlistItems",
-    { part: "contentDetails", playlistId: uploads, maxResults: String(maxVideos) },
-    60 * 60
-  );
-  const videoIds = (pl.items || []).map((i) => i.contentDetails.videoId);
+  // 업로드 재생목록 조회. 영상이 0개이거나 재생목록을 못 찾으면(404) 빈 목록으로 처리.
+  let videoIds: string[] = [];
+  if (uploads) {
+    try {
+      const pl = await yt<PlaylistResp>(
+        "playlistItems",
+        { part: "contentDetails", playlistId: uploads, maxResults: String(maxVideos) },
+        60 * 60
+      );
+      videoIds = (pl.items || []).map((i) => i.contentDetails.videoId);
+    } catch {
+      videoIds = []; // 업로드 없음 / 재생목록 404 → 영상 없음으로 진행
+    }
+  }
 
   let recentVideos: VideoStat[] = [];
   if (videoIds.length) {
