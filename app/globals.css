@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(120, 127, 255, 0.08), transparent 60%),
+    #f6f7fb;
+  color: #1a1a2e;
+}
+
+/* 가는 스크롤바 (테이블 등) */
+.scroll-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: #d6d8ec; border-radius: 8px; }
