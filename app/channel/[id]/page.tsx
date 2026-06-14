@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CHANNELS, getChannelConfig } from "@/lib/channels";
+import { CHANNELS, getChannelConfig, DEFAULT_COST_PER_VIDEO } from "@/lib/channels";
 import { getChannelData } from "@/lib/youtube";
 import { StatCard } from "@/components/StatCard";
 import { TypeBadge } from "@/components/TypeBadge";
@@ -86,7 +86,11 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
           최근 영상 ({data.recentVideos.length})
         </h2>
         {data.recentVideos.length > 0 ? (
-          <VideoRevenueTable channelId={data.channelId} videos={data.recentVideos} />
+          <VideoRevenueTable
+            channelId={data.channelId}
+            videos={data.recentVideos}
+            defaultCost={cfg.costPerVideo ?? DEFAULT_COST_PER_VIDEO}
+          />
         ) : (
           <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-sm text-slate-400">
             표시할 영상이 없습니다.

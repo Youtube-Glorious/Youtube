@@ -24,9 +24,11 @@ export interface VideoRow {
 export function VideoRevenueTable({
   channelId,
   videos,
+  defaultCost = 0,
 }: {
   channelId: string;
   videos: VideoRow[];
+  defaultCost?: number;
 }) {
   const { status } = useSession();
   const [costs, setCosts] = useState<Record<string, number>>({});
@@ -107,6 +109,11 @@ export function VideoRevenueTable({
           수익을 불러오지 못했어요: {errMsg} (계정 연결/권한을 확인하세요)
         </div>
       )}
+      {loggedIn && defaultCost > 0 && (
+        <p className="px-1 text-xs text-slate-400">
+          💸 비용은 <b>쇼츠 영상에만</b> 기본 <b>₩{formatNumber(defaultCost)}</b> 자동 적용(롱폼은 0) · 다른 영상은 그 칸만 고치면 따로 저장돼요
+        </p>
+      )}
 
       <div className="scroll-thin overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-card">
         <table className="w-full min-w-[920px] text-sm">
@@ -128,7 +135,8 @@ export function VideoRevenueTable({
             {videos.map((v) => {
               const er = engagementRate(v.views, v.likes, v.comments);
               const rev = revenue[v.id] || 0;
-              const cost = costs[v.id] || 0;
+              // 저장된 개별 비용이 있으면 그걸, 없으면 쇼츠 영상에만 기본 비용 적용 (롱폼은 0)
+              const cost = v.id in costs ? costs[v.id] : v.isShort ? defaultCost : 0;
               const profit = rev - cost;
               return (
                 <tr key={v.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">

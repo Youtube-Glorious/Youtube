@@ -13,6 +13,9 @@
 
 export type ChannelType = "쇼츠" | "롱폼";
 
+/** 영상 1개당 기본 프리랜서 비용(원). 영상별로 다르면 화면에서 그 칸만 수정 가능. */
+export const DEFAULT_COST_PER_VIDEO = 12000;
+
 export interface ChannelConfig {
   id: string;
   name: string;
@@ -20,11 +23,13 @@ export interface ChannelConfig {
   handle?: string;
   channelId?: string;
   query?: string;
+  /** 이 채널의 영상당 기본 비용(원). 없으면 DEFAULT_COST_PER_VIDEO 사용 */
+  costPerVideo?: number;
 }
 
 export const CHANNELS: ChannelConfig[] = [
-  { id: "shorts-master", name: "쇼츠석사_Fun", type: "쇼츠", handle: "@쇼츠석사_Fun" },
-  { id: "sayeonjarak",   name: "사연자락",     type: "롱폼", handle: "@사연자락" },
+  { id: "shorts-master", name: "쇼츠석사_Fun", type: "쇼츠", handle: "@쇼츠석사_Fun", costPerVideo: 12000 },
+  { id: "sayeonjarak",   name: "사연자락",     type: "롱폼", handle: "@사연자락",     costPerVideo: 12000 },
 ];
 
 export function getChannelConfig(id: string): ChannelConfig | undefined {
