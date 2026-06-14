@@ -23,10 +23,8 @@ export interface ChannelConfig {
 }
 
 export const CHANNELS: ChannelConfig[] = [
-  { id: "shorts-master",   name: "쇼츠석사_Fun", type: "쇼츠", handle: "@쇼츠석사_Fun" },
-  { id: "sayeon",          name: "사연다루기",   type: "롱폼", handle: "@사연다루기" },
-  { id: "seodamchae",      name: "서담채",       type: "롱폼", handle: "@서담채" },
-  { id: "shopping-master", name: "쇼핑석사",     type: "롱폼", handle: "@쇼핑석사" },
+  { id: "shorts-master", name: "쇼츠석사_Fun", type: "쇼츠", handle: "@쇼츠석사_Fun" },
+  { id: "sayeonjarak",   name: "사연자락",     type: "롱폼", handle: "@사연자락" },
 ];
 
 export function getChannelConfig(id: string): ChannelConfig | undefined {
