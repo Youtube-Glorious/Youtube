@@ -109,11 +109,6 @@ export function VideoRevenueTable({
           수익을 불러오지 못했어요: {errMsg} (계정 연결/권한을 확인하세요)
         </div>
       )}
-      {loggedIn && defaultCost > 0 && (
-        <p className="px-1 text-xs text-slate-400">
-          💸 비용은 <b>쇼츠 영상에만</b> 기본 <b>₩{formatNumber(defaultCost)}</b> 자동 적용(롱폼은 0) · 다른 영상은 그 칸만 고치면 따로 저장돼요
-        </p>
-      )}
 
       <div className="scroll-thin overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-card">
         <table className="w-full min-w-[920px] text-sm">
