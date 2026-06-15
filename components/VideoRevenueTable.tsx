@@ -25,10 +25,13 @@ export function VideoRevenueTable({
   channelId,
   videos,
   defaultCost = 0,
+  showCost = true,
 }: {
   channelId: string;
   videos: VideoRow[];
   defaultCost?: number;
+  /** 비용 컬럼 표시 여부. 롱폼 채널은 false 로 비용을 숨긴다. */
+  showCost?: boolean;
 }) {
   const { status } = useSession();
   const [costs, setCosts] = useState<Record<string, number>>({});
@@ -95,7 +98,15 @@ export function VideoRevenueTable({
       {/* 로그인 안내 배너 */}
       {!loggedIn && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-brand/20 bg-brand-light px-4 py-3 text-sm text-slate-700">
-          <span>🔒 로그인하면 <b>수익(₩)</b>과 <b>프리랜서 비용·순이익</b>이 표시됩니다.</span>
+          <span>
+            🔒 로그인하면{" "}
+            {showCost ? (
+              <><b>수익(₩)</b>과 <b>프리랜서 비용·순이익</b></>
+            ) : (
+              <><b>수익(₩)</b>과 <b>순이익</b></>
+            )}
+            이 표시됩니다.
+          </span>
           <button
             onClick={() => signIn("google")}
             className="shrink-0 rounded-full bg-brand px-3 py-1 font-semibold text-white hover:bg-brand-dark"
@@ -122,7 +133,7 @@ export function VideoRevenueTable({
               <th className="px-4 py-3 text-right font-medium">댓글</th>
               <th className="px-4 py-3 text-right font-medium">참여율</th>
               <th className="px-4 py-3 text-right font-medium">수익</th>
-              <th className="px-4 py-3 text-right font-medium">비용</th>
+              {showCost && <th className="px-4 py-3 text-right font-medium">비용</th>}
               <th className="px-4 py-3 text-right font-medium">순이익</th>
             </tr>
           </thead>
@@ -130,8 +141,9 @@ export function VideoRevenueTable({
             {videos.map((v) => {
               const er = engagementRate(v.views, v.likes, v.comments);
               const rev = revenue[v.id] || 0;
-              // 저장된 개별 비용이 있으면 그걸, 없으면 쇼츠 영상에만 기본 비용 적용 (롱폼은 0)
-              const cost = v.id in costs ? costs[v.id] : v.isShort ? defaultCost : 0;
+              // 비용을 숨기는 채널(롱폼)은 항상 0. 그 외에는 저장된 개별 비용이 있으면 그걸,
+              // 없으면 쇼츠 영상에만 기본 비용 적용 (롱폼은 0)
+              const cost = !showCost ? 0 : v.id in costs ? costs[v.id] : v.isShort ? defaultCost : 0;
               const profit = rev - cost;
               return (
                 <tr key={v.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
@@ -184,14 +196,16 @@ export function VideoRevenueTable({
                     )}
                   </td>
 
-                  {/* 비용 (직접 입력) */}
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    {loggedIn ? (
-                      <CostInput value={cost} onSave={(val) => saveCost(v.id, val)} />
-                    ) : (
-                      <Lock />
-                    )}
-                  </td>
+                  {/* 비용 (직접 입력) — 롱폼 등 비용 미사용 채널은 숨김 */}
+                  {showCost && (
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      {loggedIn ? (
+                        <CostInput value={cost} onSave={(val) => saveCost(v.id, val)} />
+                      ) : (
+                        <Lock />
+                      )}
+                    </td>
+                  )}
 
                   {/* 순이익 */}
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">

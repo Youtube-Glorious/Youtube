@@ -90,6 +90,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ id: st
             channelId={data.channelId}
             videos={data.recentVideos}
             defaultCost={cfg.costPerVideo ?? DEFAULT_COST_PER_VIDEO}
+            showCost={cfg.type !== "롱폼"}
           />
         ) : (
           <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-sm text-slate-400">
