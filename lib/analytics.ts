@@ -40,6 +40,34 @@ async function describeError(res: Response): Promise<string> {
   return `${res.status}${detail ? " " + detail : ""}`;
 }
 
+/**
+ * OAuth 토큰이 실제로 소유/관리하는 채널 목록(Data API mine=true).
+ * 토큰의 "현재 채널 컨텍스트"를 그대로 반영하므로, 이 목록에 대상 채널이 없으면
+ * Analytics 가 403(forbidden) 을 내는 이유가 된다. (진단 핵심)
+ */
+async function ownedChannels(token: string): Promise<{ id: string; title: string }[]> {
+  try {
+    const url = new URL("https://www.googleapis.com/youtube/v3/channels");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("mine", "true");
+    url.searchParams.set("maxResults", "50");
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (Array.isArray(data.items) ? data.items : []).map(
+      (it: { id: string; snippet?: { title?: string } }) => ({
+        id: it.id,
+        title: it?.snippet?.title || it.id,
+      })
+    );
+  } catch {
+    return [];
+  }
+}
+
 export interface ChannelRevenueResult {
   /** 영상ID → 예상 수익(USD) */
   byVideo: Record<string, number>;
@@ -51,6 +79,10 @@ export interface ChannelRevenueResult {
   monetaryDenied?: boolean;
   /** 마지막으로 만난 API 에러(있으면). 진단 안내용. */
   apiError?: string;
+  /** 조회 대상 채널 ID (진단용) */
+  targetChannelId: string;
+  /** 연결된 계정들이 실제 소유한 채널 목록 (진단용). 대상이 여기 없으면 그래서 403. */
+  owned: { id: string; title: string }[];
 }
 
 /** YouTube Analytics 리포트 호출 (공통). */
@@ -83,6 +115,7 @@ export async function getChannelRevenueUSD(channelId: string): Promise<ChannelRe
 
   let matchedOwner = false;
   let apiError: string | undefined;
+  const ownedMap = new Map<string, string>(); // 연결 계정들이 소유한 채널 누적 (id→title)
 
   for (const r of rows) {
     const token = await accessTokenFrom(r.refresh_token as string);
@@ -109,7 +142,7 @@ export async function getChannelRevenueUSD(channelId: string): Promise<ChannelRe
       if (Array.isArray(data.rows)) {
         for (const row of data.rows) map[row[0]] = Number(row[1] || 0);
       }
-      return { byVideo: map, accounts: rows.length, matchedOwner: true };
+      return { byVideo: map, accounts: rows.length, matchedOwner: true, targetChannelId: channelId, owned: [] };
     }
 
     // 수익 쿼리 403 등 → 같은 채널을 기본 지표(views)로 찔러 "소유 vs 수익전용 거부" 구분
@@ -123,12 +156,24 @@ export async function getChannelRevenueUSD(channelId: string): Promise<ChannelRe
         matchedOwner: true,
         monetaryDenied: true,
         apiError,
+        targetChannelId: channelId,
+        owned: [],
       };
     }
-    // 기본 분석도 거부 → 이 계정은 이 채널 소유가 아님 → 다음 계정 시도
+
+    // 기본 분석도 거부 → 이 계정은 이 채널 소유가 아님.
+    // 이 토큰이 "실제로" 무슨 채널을 소유했는지 모아 두었다가 진단에 보여준다.
+    for (const o of await ownedChannels(token)) ownedMap.set(o.id, o.title);
   }
 
-  return { byVideo: {}, accounts: rows.length, matchedOwner, apiError };
+  return {
+    byVideo: {},
+    accounts: rows.length,
+    matchedOwner,
+    apiError,
+    targetChannelId: channelId,
+    owned: [...ownedMap.entries()].map(([id, title]) => ({ id, title })),
+  };
 }
 
 /** 연결된 계정 수 (설정 안내용) */
