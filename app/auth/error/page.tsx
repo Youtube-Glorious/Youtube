@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { REJECTED_EMAIL_COOKIE } from "@/lib/auth";
+import { auth, isAllowed, REJECTED_EMAIL_COOKIE } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +34,11 @@ export default async function AuthErrorPage({
   // 거부 시 lib/auth.ts 가 쿠키에 이메일을 심어줌. 쿼리 파라미터가 비어 있으면 쿠키에서 읽는다.
   const cookieEmail = (await cookies()).get(REJECTED_EMAIL_COOKIE)?.value;
   const attempted = queryEmail || cookieEmail || "";
+
+  // 이미 정상 로그인된 사용자가 이 페이지를 새로고침/히스토리로 다시 보는 흔한 케이스:
+  // 거부된 상태가 아님을 명시해 혼란을 막는다.
+  const session = await auth();
+  const alreadySignedIn = isAllowed(session?.user?.email);
   const code = error || "Default";
   const message =
     ERROR_TEXT[code] || "로그인 중 알 수 없는 오류가 발생했습니다.";
@@ -74,6 +79,14 @@ export default async function AuthErrorPage({
       <Link href="/" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand">
         ← 홈으로
       </Link>
+
+      {alreadySignedIn && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
+          ✅ 현재 <b className="font-mono">{session?.user?.email}</b> 로 정상 로그인된 상태입니다.
+          아래는 <b>예전 시도</b>의 에러 안내일 뿐이며, 지금은 거부된 상태가 아닙니다.{" "}
+          <Link href="/" className="underline">홈으로 가서</Link> 채널 페이지의 수익을 확인하세요.
+        </div>
+      )}
 
       <div className="rounded-2xl border border-red-100 bg-red-50/60 p-6">
         <h1 className="text-lg font-bold text-slate-800">로그인 오류</h1>
