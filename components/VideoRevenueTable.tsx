@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSession, signIn } from "next-auth/react";
 import {
   formatNumber,
@@ -8,6 +8,7 @@ import {
   formatDuration,
   engagementRate,
 } from "@/lib/format";
+import { computeVideoCost } from "@/lib/cost";
 
 export interface VideoRow {
   id: string;
@@ -95,6 +96,22 @@ export function VideoRevenueTable({
 
   const showMoney = loggedIn && (revState === "ok" || revState === "error");
 
+  // 표에 보이는 영상들 기준 합계 (총수익 / 총비용 / 총순이익)
+  const totals = useMemo(() => {
+    let rev = 0;
+    let cost = 0;
+    for (const v of videos) {
+      rev += revenue[v.id] || 0;
+      cost += computeVideoCost({
+        showCost,
+        isShort: v.isShort,
+        savedCost: v.id in costs ? costs[v.id] : undefined,
+        defaultCost,
+      });
+    }
+    return { rev, cost, profit: rev - cost };
+  }, [videos, revenue, costs, showCost, defaultCost]);
+
   return (
     <div className="space-y-2">
       {/* 로그인 안내 배너 */}
@@ -129,6 +146,15 @@ export function VideoRevenueTable({
         </div>
       )}
 
+      {/* 합계 요약 (표에 보이는 영상 기준) */}
+      {showMoney && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <MoneyCard label="총수익" value={totals.rev} />
+          {showCost && <MoneyCard label="총비용" value={totals.cost} />}
+          <MoneyCard label="총순이익" value={totals.profit} negativeRed />
+        </div>
+      )}
+
       <div className="scroll-thin overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-card">
         <table className="w-full min-w-[920px] text-sm">
           <thead>
@@ -149,9 +175,12 @@ export function VideoRevenueTable({
             {videos.map((v) => {
               const er = engagementRate(v.views, v.likes, v.comments);
               const rev = revenue[v.id] || 0;
-              // 비용을 숨기는 채널(롱폼)은 항상 0. 그 외에는 저장된 개별 비용이 있으면 그걸,
-              // 없으면 쇼츠 영상에만 기본 비용 적용 (롱폼은 0)
-              const cost = !showCost ? 0 : v.id in costs ? costs[v.id] : v.isShort ? defaultCost : 0;
+              const cost = computeVideoCost({
+                showCost,
+                isShort: v.isShort,
+                savedCost: v.id in costs ? costs[v.id] : undefined,
+                defaultCost,
+              });
               const profit = rev - cost;
               return (
                 <tr key={v.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
@@ -237,6 +266,22 @@ export function VideoRevenueTable({
 
 function Lock() {
   return <span className="text-slate-300">🔒</span>;
+}
+
+function MoneyCard({ label, value, negativeRed }: { label: string; value: number; negativeRed?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-card">
+      <div className="text-xs font-medium text-slate-500">{label}</div>
+      <div
+        className={
+          "mt-1 text-xl font-extrabold tracking-tight tabular-nums " +
+          (negativeRed && value < 0 ? "text-red-500" : "text-slate-900")
+        }
+      >
+        ₩{formatNumber(value)}
+      </div>
+    </div>
+  );
 }
 
 function CostInput({ value, onSave }: { value: number; onSave: (v: number) => void }) {
