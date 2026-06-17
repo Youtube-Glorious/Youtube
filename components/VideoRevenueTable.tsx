@@ -38,6 +38,7 @@ export function VideoRevenueTable({
   const [revenue, setRevenue] = useState<Record<string, number>>({});
   const [revState, setRevState] = useState<"idle" | "loading" | "ok" | "unauth" | "error">("idle");
   const [errMsg, setErrMsg] = useState("");
+  const [note, setNote] = useState("");
 
   const loggedIn = status === "authenticated";
 
@@ -64,6 +65,7 @@ export function VideoRevenueTable({
         if (!alive) return;
         if (cData.costs) setCosts(cData.costs);
         if (rData.byVideo) setRevenue(rData.byVideo);
+        setNote(rData.note || "");
         if (rData.error) {
           setErrMsg(rData.error);
           setRevState("error");
@@ -118,6 +120,12 @@ export function VideoRevenueTable({
       {revState === "error" && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700">
           수익을 불러오지 못했어요: {errMsg} (계정 연결/권한을 확인하세요)
+        </div>
+      )}
+      {/* 수익이 0/비어 있는 이유 안내 (에러는 아니지만 비어 있는 경우) */}
+      {loggedIn && revState === "ok" && note && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600">
+          ℹ️ {note}
         </div>
       )}
 
