@@ -28,9 +28,16 @@ export async function GET(req: NextRequest) {
     let note: string | undefined;
     if (rev.accounts === 0) {
       note = "연결된 구글 계정이 없습니다. 채널을 소유한 계정으로 로그인하세요.";
+    } else if (rev.monetaryDenied) {
+      // 기본 분석은 되는데 수익만 막힘 = 소유 계정은 맞음
+      note =
+        `채널 분석 권한은 확인됐지만 '수익(monetary)' 데이터에 접근할 수 없어요 (${rev.apiError}). ` +
+        "보통 (1) 채널이 아직 수익 창출(YouTube 파트너 프로그램) 미승인이거나, " +
+        "(2) 로그인 동의에 수익 권한(yt-analytics-monetary)이 빠진 경우입니다. " +
+        "(2)라면 로그아웃 후 다시 로그인해 권한에 동의하세요.";
     } else if (!rev.matchedOwner) {
       note = rev.apiError
-        ? `이 채널의 수익 권한을 확인하지 못했어요 (${rev.apiError}). 채널을 소유한 계정으로 로그인했는지, 수익 권한(yt-analytics-monetary)에 동의했는지 확인하세요.`
+        ? `이 채널을 소유한 계정을 찾지 못했어요 (${rev.apiError}). 채널을 실제로 소유/관리하는 구글 계정으로 로그인했는지 확인하세요. 채널이 여러 계정에 있으면 각 계정으로 한 번씩 로그인하세요.`
         : "이 채널을 소유한 계정이 연결되어 있지 않습니다. 해당 계정으로 로그인하세요.";
     } else if (total === 0) {
       note =
